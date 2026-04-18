@@ -1,1014 +1,1194 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SEM-4 Vector Calculus Project — Gradient Descent</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Playfair+Display:ital,wght@0,700;1,600&display=swap" rel="stylesheet" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Triple Integration Calculator | Vector Calculus SEM-4</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.1/math.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  /* ─── TOKENS ─────────────────────────────────────────── */
-  :root{
-    --bg:      #050810;
-    --bg2:     #0b0f1e;
-    --bg3:     #111827;
-    --border:  #1e2d4a;
-    --glow:    #00c6ff;
-    --glow2:   #6366f1;
-    --gold:    #f59e0b;
-    --text:    #e2e8f0;
-    --muted:   #64748b;
-    --card:    #0d1425;
-    --card2:   #131f38;
-    --success: #10b981;
-    --warn:    #f472b6;
+  :root {
+    --bg: #060912;
+    --surface: #0d1220;
+    --surface2: #131b2e;
+    --surface3: #1a2540;
+    --border: rgba(99,179,255,0.12);
+    --border2: rgba(99,179,255,0.22);
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --accent3: #93c5fd;
+    --gold: #f59e0b;
+    --gold2: #fcd34d;
+    --green: #10b981;
+    --green2: #34d399;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 12px;
+    --radius2: 20px;
   }
 
-  /* ─── RESET ──────────────────────────────────────────── */
-  *{margin:0;padding:0;box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{
-    font-family:'Space Grotesk',sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    overflow-x:hidden;
-    line-height:1.7;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 
-  /* ─── NOISE OVERLAY ──────────────────────────────────── */
-  body::before{
-    content:'';
-    position:fixed;inset:0;
-    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events:none;z-index:0;opacity:.5;
-  }
-
-  /* ─── GRID BACKGROUND ────────────────────────────────── */
-  body::after{
-    content:'';
-    position:fixed;inset:0;
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
     background-image:
-      linear-gradient(rgba(0,198,255,.03) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(0,198,255,.03) 1px,transparent 1px);
-    background-size:60px 60px;
-    pointer-events:none;z-index:0;
+      linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
   }
 
-  /* ─── HERO ───────────────────────────────────────────── */
-  #hero{
-    min-height:100vh;
-    display:flex;flex-direction:column;justify-content:center;align-items:center;
-    text-align:center;
-    padding:6rem 2rem 4rem;
-    position:relative;z-index:1;
+  /* Glow orbs */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
   }
 
-  .badge{
-    display:inline-block;
-    background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(0,198,255,.2));
-    border:1px solid rgba(0,198,255,.3);
-    color:var(--glow);
-    font-size:.75rem;font-weight:600;letter-spacing:.12em;
-    padding:.4em 1.2em;border-radius:999px;
-    text-transform:uppercase;margin-bottom:2rem;
-    animation:fadeDown .8s ease both;
+  .page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ── HEADER ─────────────────────────────────── */
+  header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+    position: relative;
   }
 
-  .hero-title{
-    font-family:'Playfair Display',serif;
-    font-size:clamp(2.4rem,6vw,5rem);
-    font-weight:700;
-    line-height:1.1;
-    background:linear-gradient(135deg,#fff 30%,var(--glow) 70%,var(--glow2));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-    background-clip:text;
-    margin-bottom:1.2rem;
-    animation:fadeDown .9s .1s ease both;
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.25);
+    color: var(--accent2);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+    padding: 6px 14px; border-radius: 100px;
+    margin-bottom: 20px; text-transform: uppercase;
   }
 
-  .hero-sub{
-    font-size:1.1rem;color:var(--muted);max-width:640px;
-    animation:fadeDown 1s .2s ease both;
+  .header-badge span { width: 6px; height: 6px; border-radius: 50%; background: var(--green2); animation: pulse 2s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #e2e8f0 0%, #60a5fa 50%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
   }
 
-  .hero-pills{
-    display:flex;flex-wrap:wrap;justify-content:center;gap:.7rem;
-    margin-top:2rem;
-    animation:fadeDown 1s .35s ease both;
-  }
-  .pill{
-    background:var(--card2);border:1px solid var(--border);
-    border-radius:999px;padding:.35em 1em;font-size:.82rem;
-    color:#94a3b8;
-  }
-  .pill b{color:var(--glow);}
-
-  /* orbit animation */
-  .orbit-wrap{
-    position:relative;width:340px;height:340px;
-    margin:3rem auto 2rem;
-    animation:fadeIn 1.2s .4s ease both;
-  }
-  .orbit-wrap svg{width:100%;height:100%;}
-
-  /* ─── CTA BUTTONS ────────────────────────────────────── */
-  .cta-row{
-    display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;
-    margin-top:2rem;
-    animation:fadeDown 1s .5s ease both;
-  }
-  .btn{
-    display:inline-flex;align-items:center;gap:.6rem;
-    padding:.75em 1.8em;border-radius:10px;font-size:.95rem;font-weight:600;
-    cursor:pointer;text-decoration:none;transition:all .25s;
-    border:none;
-  }
-  .btn-primary{
-    background:linear-gradient(135deg,var(--glow),var(--glow2));
-    color:#000;
-  }
-  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,198,255,.35);}
-  .btn-secondary{
-    background:transparent;border:1px solid var(--border);
-    color:var(--text);
-  }
-  .btn-secondary:hover{border-color:var(--glow);color:var(--glow);transform:translateY(-2px);}
-
-  /* ─── SECTION WRAPPER ────────────────────────────────── */
-  .wrap{max-width:1100px;margin:0 auto;padding:0 1.5rem;}
-
-  section{position:relative;z-index:1;padding:5rem 0;}
-
-  .section-label{
-    font-size:.72rem;font-weight:700;letter-spacing:.18em;
-    text-transform:uppercase;color:var(--glow);margin-bottom:.8rem;
-  }
-  .section-title{
-    font-family:'Playfair Display',serif;
-    font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;
-    line-height:1.2;margin-bottom:1rem;
-  }
-  .section-body{color:var(--muted);font-size:1rem;max-width:660px;}
-
-  /* ─── DIVIDER ─────────────────────────────────────────── */
-  .divider{
-    height:1px;
-    background:linear-gradient(90deg,transparent,var(--border),transparent);
-    margin:0;
+  .subtitle {
+    font-size: 16px; color: var(--text2); font-weight: 400;
+    max-width: 560px; line-height: 1.6;
   }
 
-  /* ─── PROBLEM SECTION ────────────────────────────────── */
-  #problem .grid{
-    display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:3rem;
-  }
-  @media(max-width:680px){#problem .grid{grid-template-columns:1fr;}}
-
-  .info-card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:16px;padding:1.8rem;
-    transition:border-color .3s,transform .3s;
-  }
-  .info-card:hover{border-color:var(--glow);transform:translateY(-4px);}
-  .info-card .ic{
-    font-size:1.8rem;margin-bottom:.9rem;
-  }
-  .info-card h3{font-size:1rem;font-weight:600;color:#fff;margin-bottom:.5rem;}
-  .info-card p{font-size:.9rem;color:var(--muted);line-height:1.6;}
-
-  /* ─── MATH SECTION ───────────────────────────────────── */
-  #math{background:var(--bg2);}
-
-  .math-grid{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
-    gap:1.5rem;margin-top:3rem;
-  }
-  .math-card{
-    background:var(--card);border:1px solid var(--border);
-    border-radius:14px;padding:1.6rem;
-    position:relative;overflow:hidden;
-  }
-  .math-card::before{
-    content:'';position:absolute;top:0;left:0;right:0;height:3px;
-    background:linear-gradient(90deg,var(--glow),var(--glow2));
-  }
-  .math-card .tag{
-    display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--glow2);
-    background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);
-    padding:.2em .7em;border-radius:999px;margin-bottom:.9rem;
-  }
-  .math-card h3{font-size:.95rem;color:#fff;margin-bottom:.7rem;}
-  .math-eq{
-    font-family:'JetBrains Mono',monospace;
-    font-size:.93rem;color:var(--glow);
-    background:rgba(0,198,255,.07);
-    border:1px solid rgba(0,198,255,.15);
-    border-radius:8px;padding:.7em 1em;
-    margin:.6rem 0;letter-spacing:.03em;
-  }
-  .math-card p{font-size:.88rem;color:var(--muted);}
-
-  /* ─── ALGORITHM SECTION ──────────────────────────────── */
-  .algo-steps{
-    display:flex;flex-direction:column;gap:0;
-    margin-top:3rem;position:relative;
-  }
-  .algo-steps::before{
-    content:'';position:absolute;left:22px;top:0;bottom:0;width:2px;
-    background:linear-gradient(to bottom,var(--glow),var(--glow2),transparent);
-  }
-  .step{
-    display:flex;gap:1.5rem;align-items:flex-start;
-    padding:1.2rem 0;
-  }
-  .step-num{
-    flex-shrink:0;width:44px;height:44px;
-    background:linear-gradient(135deg,var(--glow),var(--glow2));
-    border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-weight:700;font-size:.9rem;color:#000;position:relative;z-index:1;
-  }
-  .step-content h4{font-size:.95rem;color:#fff;margin-bottom:.3rem;}
-  .step-content p{font-size:.88rem;color:var(--muted);}
-
-  /* ─── CODE SECTION ───────────────────────────────────── */
-  #code{background:var(--bg2);}
-
-  .code-block{
-    background:#060d1a;
-    border:1px solid var(--border);
-    border-radius:14px;overflow:hidden;
-    margin-top:2rem;
-  }
-  .code-header{
-    display:flex;align-items:center;gap:.5rem;
-    padding:.8rem 1.2rem;
-    background:rgba(255,255,255,.03);
-    border-bottom:1px solid var(--border);
-  }
-  .dot{width:12px;height:12px;border-radius:50%;}
-  .dot.r{background:#ff5f57;}.dot.y{background:#ffbd2e;}.dot.g{background:#28c840;}
-  .code-fname{font-size:.8rem;color:var(--muted);margin-left:.5rem;font-family:'JetBrains Mono',monospace;}
-  pre{
-    padding:1.5rem;
-    font-family:'JetBrains Mono',monospace;
-    font-size:.82rem;
-    line-height:1.8;
-    overflow-x:auto;
-    color:#cdd6f4;
-  }
-  .kw{color:#89b4fa;} .fn{color:#a6e3a1;} .cm{color:#585b70;font-style:italic;}
-  .str{color:#f9e2af;} .num{color:#fab387;} .op{color:#89dceb;}
-  .var{color:#cba6f7;} .py{color:#f38ba8;}
-
-  /* ─── RESULTS SECTION ────────────────────────────────── */
-  .metrics-grid{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-    gap:1.2rem;margin-top:3rem;
-  }
-  .metric-card{
-    background:var(--card);border:1px solid var(--border);
-    border-radius:14px;padding:1.5rem;text-align:center;
-    transition:all .3s;
-  }
-  .metric-card:hover{border-color:var(--glow);transform:translateY(-3px);}
-  .metric-val{
-    font-family:'JetBrains Mono',monospace;
-    font-size:1.9rem;font-weight:700;
-    background:linear-gradient(135deg,var(--glow),var(--glow2));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-    background-clip:text;
-    display:block;margin-bottom:.4rem;
-  }
-  .metric-label{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
-
-  .preds-table{
-    width:100%;border-collapse:collapse;margin-top:2rem;
-    font-size:.9rem;
-  }
-  .preds-table th{
-    background:rgba(0,198,255,.1);color:var(--glow);
-    padding:.8em 1.2em;text-align:left;font-weight:600;
-    border-bottom:2px solid rgba(0,198,255,.2);
-  }
-  .preds-table td{
-    padding:.8em 1.2em;border-bottom:1px solid var(--border);color:var(--text);
-  }
-  .preds-table tr:hover td{background:rgba(255,255,255,.03);}
-  .preds-table .highlight{color:var(--glow);font-family:'JetBrains Mono',monospace;font-weight:600;}
-
-  /* ─── VC CONCEPTS ─────────────────────────────────────── */
-  #vc{background:var(--bg2);}
-
-  .vc-grid{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-    gap:1.5rem;margin-top:3rem;
-  }
-  .vc-card{
-    background:var(--card);border:1px solid var(--border);
-    border-radius:14px;padding:1.5rem;
-    display:flex;flex-direction:column;gap:.8rem;
-    transition:all .3s;
-  }
-  .vc-card:hover{border-color:var(--glow2);transform:translateY(-4px);}
-  .vc-icon{
-    width:44px;height:44px;border-radius:12px;
-    background:linear-gradient(135deg,rgba(0,198,255,.2),rgba(99,102,241,.2));
-    border:1px solid rgba(0,198,255,.2);
-    display:flex;align-items:center;justify-content:center;
-    font-size:1.3rem;
-  }
-  .vc-card h3{font-size:.95rem;color:#fff;font-weight:600;}
-  .vc-card p{font-size:.87rem;color:var(--muted);line-height:1.6;}
-  .vc-formula{
-    font-family:'JetBrains Mono',monospace;font-size:.82rem;
-    color:var(--glow);background:rgba(0,198,255,.07);
-    border-left:3px solid var(--glow);
-    padding:.4em .8em;border-radius:0 6px 6px 0;
+  /* ── SHAPE SELECTOR ─────────────────────────── */
+  .shape-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 36px;
   }
 
-  /* ─── DOWNLOAD ───────────────────────────────────────── */
-  #download{text-align:center;}
+  .shape-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
 
-  .dl-grid{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-    gap:1.5rem;margin-top:3rem;
+  .shape-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
   }
-  .dl-card{
-    background:var(--card);border:1px solid var(--border);
-    border-radius:16px;padding:2rem;
-    display:flex;flex-direction:column;gap:1rem;
-    transition:all .3s;text-align:left;
-  }
-  .dl-card:hover{border-color:var(--glow);transform:translateY(-4px);}
-  .dl-card .dl-icon{font-size:2.2rem;}
-  .dl-card h3{font-size:1rem;color:#fff;font-weight:600;}
-  .dl-card p{font-size:.87rem;color:var(--muted);}
-  .dl-card .btn{margin-top:auto;}
 
-  /* ─── FOOTER ─────────────────────────────────────────── */
-  footer{
-    text-align:center;padding:3rem 1.5rem;
-    border-top:1px solid var(--border);
-    color:var(--muted);font-size:.85rem;
-    position:relative;z-index:1;
-  }
-  footer span{color:var(--glow);}
+  .shape-card:hover { border-color: var(--border2); transform: translateY(-2px); }
 
-  /* ─── SCROLL REVEAL ──────────────────────────────────── */
-  .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s,transform .7s;}
-  .reveal.visible{opacity:1;transform:none;}
+  .shape-card.active {
+    border-color: var(--accent);
+    background: rgba(59,130,246,0.08);
+  }
 
-  /* ─── ANIMATIONS ─────────────────────────────────────── */
-  @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:none}}
-  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-  @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
-  @keyframes orbit{from{transform:rotate(0deg) translateX(130px) rotate(0deg)}to{transform:rotate(360deg) translateX(130px) rotate(-360deg)}}
-  @keyframes orbit2{from{transform:rotate(180deg) translateX(95px) rotate(-180deg)}to{transform:rotate(540deg) translateX(95px) rotate(-540deg)}}
-  @keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  .shape-card.active::before { opacity: 1; }
 
-  /* ─── NAV ─────────────────────────────────────────────── */
-  nav{
-    position:fixed;top:0;left:0;right:0;z-index:100;
-    padding:1rem 2rem;
-    display:flex;align-items:center;justify-content:space-between;
-    background:rgba(5,8,16,.85);
-    backdrop-filter:blur(12px);
-    border-bottom:1px solid var(--border);
+  .shape-icon {
+    width: 48px; height: 48px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
   }
-  .nav-logo{
-    font-family:'Playfair Display',serif;
-    font-size:1.1rem;color:#fff;font-weight:700;
-  }
-  .nav-logo span{color:var(--glow);}
-  .nav-links{display:flex;gap:2rem;}
-  .nav-links a{
-    font-size:.87rem;color:var(--muted);text-decoration:none;
-    transition:color .2s;
-  }
-  .nav-links a:hover{color:var(--glow);}
-  @media(max-width:600px){.nav-links{display:none;}}
 
-  /* ─── LIVE DEMO CANVAS ───────────────────────────────── */
-  #demo-canvas{
-    width:100%;height:320px;
-    background:#060d1a;border:1px solid var(--border);
-    border-radius:14px;overflow:hidden;
-    display:block;margin-top:2rem;
+  .shape-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .shape-card p { font-size: 12px; color: var(--text3); line-height: 1.5; }
+
+  .shape-card .formula {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--gold);
+    background: rgba(245,158,11,0.08);
+    padding: 6px 10px;
+    border-radius: 8px;
   }
+
+  /* ── MAIN GRID ──────────────────────────────── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 800px) { .main-grid { grid-template-columns: 1fr; } }
+
+  /* ── PANEL ──────────────────────────────────── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 28px;
+  }
+
+  .panel-title {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text3);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .panel-title::before { content: ''; display: block; width: 3px; height: 14px; background: var(--accent); border-radius: 2px; }
+
+  /* ── INPUTS ─────────────────────────────────── */
+  .param-row {
+    margin-bottom: 20px;
+  }
+
+  .param-label {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .param-name { font-size: 14px; font-weight: 500; }
+  .param-desc { font-size: 12px; color: var(--text3); }
+  .param-value {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    color: var(--accent2);
+    background: rgba(59,130,246,0.1);
+    padding: 3px 8px; border-radius: 6px;
+    min-width: 48px; text-align: center;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--surface3);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]:focus { border-color: var(--accent); }
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* ── CALCULATE BUTTON ───────────────────────── */
+  .calc-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .calc-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.2s;
+  }
+
+  .calc-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+  .calc-btn:active { transform: translateY(0); }
+  .calc-btn.loading { opacity: 0.7; cursor: wait; }
+
+  /* ── RESULT PANEL ───────────────────────────── */
+  .result-area { margin-top: 24px; }
+
+  .result-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 24px;
+    margin-bottom: 16px;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .metric {
+    background: var(--surface3);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .metric-value { font-family: var(--mono); font-size: 22px; font-weight: 600; }
+  .metric-unit { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+  .metric.primary .metric-value { color: var(--accent2); }
+  .metric.verify .metric-value { color: var(--green2); }
+  .metric.error .metric-value { color: var(--gold2); font-size: 18px; }
+
+  .error-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 100px;
+    font-size: 12px; font-weight: 600;
+  }
+
+  .error-badge.good { background: rgba(16,185,129,0.1); color: var(--green2); border: 1px solid rgba(16,185,129,0.2); }
+  .error-badge.warn { background: rgba(245,158,11,0.1); color: var(--gold2); border: 1px solid rgba(245,158,11,0.2); }
+
+  /* ── MATH FORMULA DISPLAY ───────────────────── */
+  .formula-box {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--gold2);
+    line-height: 2;
+  }
+
+  .formula-box .comment { color: var(--text3); font-size: 11px; }
+
+  /* ── RIGHT PANEL: VISUALIZATION ─────────────── */
+  .viz-panel { display: flex; flex-direction: column; gap: 20px; }
+
+  .canvas-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 20px;
+    position: relative;
+  }
+
+  canvas#shapeCanvas {
+    width: 100%;
+    border-radius: var(--radius);
+    display: block;
+  }
+
+  /* ── STEPS ──────────────────────────────────── */
+  .steps { margin-top: 4px; }
+
+  .step {
+    display: flex; gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .step:last-child { border-bottom: none; }
+
+  .step-num {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border-radius: 50%;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--accent2); font-weight: 600;
+  }
+
+  .step-content { font-size: 13px; color: var(--text2); line-height: 1.6; padding-top: 4px; }
+  .step-content strong { color: var(--text); font-weight: 500; }
+  .step-content code { font-family: var(--mono); font-size: 11px; color: var(--gold); background: rgba(245,158,11,0.08); padding: 1px 6px; border-radius: 4px; }
+
+  /* ── CONVERGENCE CHART ──────────────────────── */
+  .chart-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 24px;
+  }
+
+  /* ── INFO STRIP ─────────────────────────────── */
+  .info-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .info-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+
+  .info-chip .label { color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+  .info-chip .val { font-family: var(--mono); color: var(--accent2); font-weight: 600; }
+
+  /* ── EMPTY STATE ────────────────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text3);
+  }
+
+  .empty-state .big { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* ── FOOTER ─────────────────────────────────── */
+  footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+
+  footer p { font-size: 12px; color: var(--text3); }
+  footer code { font-family: var(--mono); color: var(--text2); }
+
+  /* ── SPINNER ────────────────────────────────── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
 </style>
 </head>
 <body>
+<div class="page">
 
-<!-- NAV -->
-<nav>
-  <div class="nav-logo">∇<span>Calculus</span></div>
-  <div class="nav-links">
-    <a href="#problem">Problem</a>
-    <a href="#math">Math Model</a>
-    <a href="#algo">Algorithm</a>
-    <a href="#code">Code</a>
-    <a href="#results">Results</a>
-    <a href="#download">Download</a>
-  </div>
-</nav>
+  <!-- HEADER -->
+  <header>
+    <div class="header-badge"><span></span>Vector Calculus SEM-4</div>
+    <h1>3D Surface & Volume<br>Triple Integration</h1>
+    <p class="subtitle">Select a 3D shape, adjust its parameters, and compute exact volume & surface area using adaptive numerical integration — verified against closed-form formulas.</p>
+  </header>
 
-<!-- HERO -->
-<section id="hero">
-  <div class="badge">SEM-4 &nbsp;|&nbsp; Vector Calculus Project &nbsp;|&nbsp; GTU 2024–25</div>
-  <h1 class="hero-title">Gradient Descent<br/>for AI Optimisation</h1>
-  <p class="hero-sub">Applying vector calculus — gradients, partial derivatives, and loss surfaces — to minimise prediction error in a real machine learning model.</p>
-
-  <div class="hero-pills">
-    <div class="pill"><b>Topic 1</b> – Min. Error in AI</div>
-    <div class="pill"><b>Language:</b> Python 3</div>
-    <div class="pill"><b>R² Score:</b> 0.9989</div>
-    <div class="pill"><b>Loss Reduction:</b> 99.97%</div>
-  </div>
-
-  <!-- Animated Orbit SVG -->
-  <div class="orbit-wrap">
-    <svg viewBox="0 0 340 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Outer orbit ring -->
-      <circle cx="170" cy="170" r="130" stroke="rgba(0,198,255,0.12)" stroke-width="1.5" stroke-dasharray="8 5"/>
-      <!-- Inner orbit ring -->
-      <circle cx="170" cy="170" r="95" stroke="rgba(99,102,241,0.15)" stroke-width="1.5" stroke-dasharray="5 8"/>
-      <!-- Centre glow -->
-      <circle cx="170" cy="170" r="50" fill="url(#centreGrad)" opacity="0.9"/>
-      <circle cx="170" cy="170" r="36" fill="url(#centreGrad2)"/>
-      <!-- Centre text -->
-      <text x="170" y="166" text-anchor="middle" fill="white" font-size="11" font-family="JetBrains Mono" font-weight="600">∇L(w,b)</text>
-      <text x="170" y="182" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8" font-family="Space Grotesk">Loss Surface</text>
-      <!-- Orbiting nodes -->
-      <g style="transform-origin:170px 170px;animation:orbit 6s linear infinite">
-        <circle cx="300" cy="170" r="12" fill="#00c6ff" opacity="0.9"/>
-        <text x="300" y="174" text-anchor="middle" fill="#000" font-size="8" font-weight="700">w</text>
-      </g>
-      <g style="transform-origin:170px 170px;animation:orbit 6s linear infinite;animation-delay:-3s">
-        <circle cx="300" cy="170" r="10" fill="#6366f1" opacity="0.9"/>
-        <text x="300" y="174" text-anchor="middle" fill="white" font-size="8" font-weight="700">b</text>
-      </g>
-      <g style="transform-origin:170px 170px;animation:orbit2 4s linear infinite">
-        <circle cx="265" cy="170" r="8" fill="#f59e0b" opacity="0.85"/>
-        <text x="265" y="174" text-anchor="middle" fill="#000" font-size="7" font-weight="700">α</text>
-      </g>
-      <g style="transform-origin:170px 170px;animation:orbit2 4s linear infinite;animation-delay:-2s">
-        <circle cx="265" cy="170" r="7" fill="#10b981" opacity="0.85"/>
-        <text x="265" y="174" text-anchor="middle" fill="#000" font-size="7" font-weight="700">∂</text>
-      </g>
-      <defs>
-        <radialGradient id="centreGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#00c6ff" stop-opacity="0.25"/>
-          <stop offset="100%" stop-color="#6366f1" stop-opacity="0.05"/>
-        </radialGradient>
-        <radialGradient id="centreGrad2" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#1e3a8a" stop-opacity="0.8"/>
-          <stop offset="100%" stop-color="#0b0f1e" stop-opacity="0.9"/>
-        </radialGradient>
-      </defs>
-    </svg>
-  </div>
-
-  <div class="cta-row">
-    <a href="#problem" class="btn btn-primary">↓ Explore Project</a>
-    <a href="#download" class="btn btn-secondary">⬇ Download Files</a>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- PROBLEM STATEMENT -->
-<section id="problem">
-  <div class="wrap">
-    <div class="reveal">
-      <div class="section-label">Section 01</div>
-      <h2 class="section-title">Problem Statement</h2>
-      <p class="section-body">Build a linear regression model to predict house prices from area, using Gradient Descent to minimise the Mean Squared Error (MSE) loss function.</p>
+  <!-- SHAPE SELECTOR -->
+  <div class="shape-selector" id="shapeSelector">
+    <div class="shape-card active" data-shape="ellipsoid" onclick="selectShape('ellipsoid', this)">
+      <div class="shape-icon" style="background:rgba(59,130,246,0.12)">🔵</div>
+      <h3>Ellipsoid</h3>
+      <p>Three distinct semi-axes a, b, c</p>
+      <div class="formula">V = (4/3)·π·a·b·c</div>
     </div>
-    <div class="grid reveal">
-      <div class="info-card">
-        <div class="ic">🏠</div>
-        <h3>Real-World Problem</h3>
-        <p>Predict house prices (₹ Lakhs) based on property area (sq ft) — a classic supervised learning regression task.</p>
-      </div>
-      <div class="info-card">
-        <div class="ic">📉</div>
-        <h3>Core Challenge</h3>
-        <p>Given a loss function L(w, b), find the weight w and bias b that minimise L — efficiently, without brute-force search.</p>
-      </div>
-      <div class="info-card">
-        <div class="ic">∇</div>
-        <h3>Vector Calculus Angle</h3>
-        <p>The gradient ∇L = [∂L/∂w, ∂L/∂b] points in the direction of steepest increase. Moving opposite to ∇L descends to the minimum.</p>
-      </div>
-      <div class="info-card">
-        <div class="ic">📊</div>
-        <h3>Dataset</h3>
-        <p>12 data points: house areas ranging 650–4500 sq ft with prices 45–300 ₹ Lakhs. Features normalised using z-score.</p>
-      </div>
+    <div class="shape-card" data-shape="sphere" onclick="selectShape('sphere', this)">
+      <div class="shape-icon" style="background:rgba(139,92,246,0.12)">🟣</div>
+      <h3>Sphere</h3>
+      <p>Uniform radius R in all directions</p>
+      <div class="formula">V = (4/3)·π·R³</div>
+    </div>
+    <div class="shape-card" data-shape="cylinder" onclick="selectShape('cylinder', this)">
+      <div class="shape-icon" style="background:rgba(16,185,129,0.12)">🟢</div>
+      <h3>Cylinder</h3>
+      <p>Radius r, height h</p>
+      <div class="formula">V = π·r²·h</div>
+    </div>
+    <div class="shape-card" data-shape="cone" onclick="selectShape('cone', this)">
+      <div class="shape-icon" style="background:rgba(245,158,11,0.12)">🟡</div>
+      <h3>Cone</h3>
+      <p>Base radius r, height h</p>
+      <div class="formula">V = (1/3)·π·r²·h</div>
+    </div>
+    <div class="shape-card" data-shape="torus" onclick="selectShape('torus', this)">
+      <div class="shape-icon" style="background:rgba(239,68,68,0.12)">🔴</div>
+      <h3>Torus</h3>
+      <p>Major radius R, minor radius r</p>
+      <div class="formula">V = 2π²·R·r²</div>
     </div>
   </div>
-</section>
 
-<div class="divider"></div>
+  <!-- MAIN GRID -->
+  <div class="main-grid">
 
-<!-- MATH MODEL -->
-<section id="math">
-  <div class="wrap">
-    <div class="reveal">
-      <div class="section-label">Section 02</div>
-      <h2 class="section-title">Mathematical Model</h2>
-      <p class="section-body">Full formulation using vector calculus — hypothesis, loss function, gradient computation, and update rules.</p>
-    </div>
-    <div class="math-grid reveal">
-      <div class="math-card">
-        <div class="tag">Hypothesis</div>
-        <h3>Linear Model</h3>
-        <div class="math-eq">ŷ = w · x + b</div>
-        <p>w = weight (slope), b = bias (intercept), x = normalised area. Output ŷ is predicted price.</p>
+    <!-- LEFT: CONTROLS -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">Parameters</div>
+        <div id="paramControls"></div>
+        <button class="calc-btn" id="calcBtn" onclick="calculate()">
+          Calculate Volume & Surface Area
+        </button>
       </div>
-      <div class="math-card">
-        <div class="tag">Loss Function</div>
-        <h3>Mean Squared Error</h3>
-        <div class="math-eq">L(w,b) = (1/2m) Σ (ŷᵢ − yᵢ)²</div>
-        <p>Smooth convex scalar field over parameter space. The factor ½ simplifies gradient computation.</p>
-      </div>
-      <div class="math-card">
-        <div class="tag">Gradient</div>
-        <h3>Partial Derivatives</h3>
-        <div class="math-eq">∂L/∂w = (1/m) Σ (ŷ−y)·x</div>
-        <div class="math-eq">∂L/∂b = (1/m) Σ (ŷ−y)</div>
-        <p>The gradient vector ∇L = [∂L/∂w, ∂L/∂b] indicates the steepest ascent direction.</p>
-      </div>
-      <div class="math-card">
-        <div class="tag">Update Rule</div>
-        <h3>Gradient Descent Step</h3>
-        <div class="math-eq">w ← w − α · (∂L/∂w)</div>
-        <div class="math-eq">b ← b − α · (∂L/∂b)</div>
-        <p>α = learning rate (0.10). Each step moves parameters in the direction of steepest descent.</p>
-      </div>
-      <div class="math-card">
-        <div class="tag">Normalisation</div>
-        <h3>Z-Score Scaling</h3>
-        <div class="math-eq">x_norm = (x − μ) / σ</div>
-        <p>Prevents gradient instability. Ensures uniform gradient magnitude across all features.</p>
-      </div>
-      <div class="math-card">
-        <div class="tag">Convergence</div>
-        <h3>Stopping Criterion</h3>
-        <div class="math-eq">||∇L|| → 0</div>
-        <p>Algorithm converges when the gradient magnitude approaches zero — minimum reached on the loss surface.</p>
+
+      <!-- Formula reference -->
+      <div class="panel" style="margin-top:20px">
+        <div class="panel-title">Integration Method</div>
+        <div id="formulaDisplay"></div>
+        <div class="steps" id="stepsDisplay"></div>
       </div>
     </div>
-  </div>
-</section>
 
-<div class="divider"></div>
+    <!-- RIGHT: RESULTS + VIZ -->
+    <div class="viz-panel">
+      <div class="canvas-container">
+        <div class="panel-title">Shape Preview</div>
+        <canvas id="shapeCanvas" height="280"></canvas>
+      </div>
 
-<!-- ALGORITHM -->
-<section id="algo">
-  <div class="wrap">
-    <div class="reveal">
-      <div class="section-label">Section 03</div>
-      <h2 class="section-title">Algorithm</h2>
-      <p class="section-body">Step-by-step gradient descent procedure from initialisation to convergence.</p>
-    </div>
-    <div class="algo-steps reveal">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <h4>Define Problem &amp; Collect Data</h4>
-          <p>12 (area, price) pairs. Split into feature array X_raw and target Y.</p>
+      <div id="resultArea">
+        <div class="canvas-container empty-state">
+          <div class="big">∭</div>
+          <p>Set your parameters and click<br><strong>Calculate</strong> to compute</p>
         </div>
       </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <h4>Feature Normalisation</h4>
-          <p>Apply z-score: X = (X_raw − μ) / σ. Stabilises gradient magnitudes.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-content">
-          <h4>Initialise Parameters</h4>
-          <p>Set w = 0, b = 0. Choose α = 0.10, epochs = 500.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-content">
-          <h4>Forward Pass — Compute Predictions</h4>
-          <p>ŷ = w·X + b for all m training samples.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">5</div>
-        <div class="step-content">
-          <h4>Compute MSE Loss</h4>
-          <p>L = (1/2m) · Σ(ŷ − y)². Record for convergence plot.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">6</div>
-        <div class="step-content">
-          <h4>Backward Pass — Compute Gradients</h4>
-          <p>∂L/∂w = (1/m)·dot(error, X),  ∂L/∂b = (1/m)·sum(error).</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">7</div>
-        <div class="step-content">
-          <h4>Update Parameters</h4>
-          <p>w ← w − α·dw,  b ← b − α·db. One gradient step completed.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">8</div>
-        <div class="step-content">
-          <h4>Repeat for All Epochs</h4>
-          <p>Return to Step 4 until 500 epochs complete. Loss curve stored.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">9</div>
-        <div class="step-content">
-          <h4>Evaluate &amp; Visualise</h4>
-          <p>Compute R², RMSE. Plot 6 visualisations: convergence, regression line, 3-D surface, contour, parameter traces, gradient magnitude.</p>
-        </div>
+
+      <div class="chart-panel" id="chartPanel" style="display:none">
+        <div class="panel-title">Monte Carlo Convergence</div>
+        <canvas id="convChart" height="200"></canvas>
       </div>
     </div>
   </div>
-</section>
 
-<div class="divider"></div>
-
-<!-- CODE -->
-<section id="code">
-  <div class="wrap">
-    <div class="reveal">
-      <div class="section-label">Section 04</div>
-      <h2 class="section-title">Code Implementation</h2>
-      <p class="section-body">Python implementation using NumPy. Core gradient descent engine shown below.</p>
-    </div>
-
-    <div class="code-block reveal">
-      <div class="code-header">
-        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
-        <span class="code-fname">gradient_descent_project.py</span>
-      </div>
-      <pre><span class="cm"># ─── Dataset & Normalisation ──────────────────────────────────</span>
-<span class="kw">import</span> numpy <span class="kw">as</span> <span class="var">np</span>
-
-<span class="var">X_raw</span> <span class="op">=</span> np.array([<span class="num">650</span>, <span class="num">800</span>, <span class="num">1000</span>, <span class="num">1200</span>, <span class="num">1500</span>, <span class="num">1800</span>,
-                  <span class="num">2100</span>, <span class="num">2500</span>, <span class="num">3000</span>, <span class="num">3500</span>, <span class="num">4000</span>, <span class="num">4500</span>])
-<span class="var">Y</span>     <span class="op">=</span> np.array([<span class="num">45</span>, <span class="num">55</span>, <span class="num">65</span>, <span class="num">80</span>, <span class="num">95</span>, <span class="num">115</span>, <span class="num">135</span>,
-                   <span class="num">160</span>, <span class="num">195</span>, <span class="num">230</span>, <span class="num">265</span>, <span class="num">300</span>])
-
-<span class="var">X_mean</span>, <span class="var">X_std</span> <span class="op">=</span> X_raw.mean(), X_raw.std()
-<span class="var">X</span> <span class="op">=</span> (X_raw <span class="op">-</span> X_mean) <span class="op">/</span> X_std     <span class="cm"># z-score normalisation</span>
-<span class="var">m</span> <span class="op">=</span> len(X)
-
-<span class="cm"># ─── Loss Function ────────────────────────────────────────────</span>
-<span class="kw">def</span> <span class="fn">compute_loss</span>(w, b, X, Y):
-    predictions <span class="op">=</span> w <span class="op">*</span> X <span class="op">+</span> b
-    <span class="kw">return</span> (<span class="num">1</span> <span class="op">/</span> (<span class="num">2</span> <span class="op">*</span> m)) <span class="op">*</span> np.sum((predictions <span class="op">-</span> Y) <span class="op">**</span> <span class="num">2</span>)
-
-<span class="cm"># ─── Gradient Descent Engine ──────────────────────────────────</span>
-<span class="kw">def</span> <span class="fn">gradient_descent</span>(X, Y, w<span class="op">=</span><span class="num">0.0</span>, b<span class="op">=</span><span class="num">0.0</span>, lr<span class="op">=</span><span class="num">0.1</span>, epochs<span class="op">=</span><span class="num">500</span>):
-    loss_hist <span class="op">=</span> []
-    <span class="kw">for</span> epoch <span class="kw">in</span> range(epochs):
-        preds <span class="op">=</span> w <span class="op">*</span> X <span class="op">+</span> b
-        error <span class="op">=</span> preds <span class="op">-</span> Y
-
-        dw <span class="op">=</span> (<span class="num">1</span><span class="op">/</span>m) <span class="op">*</span> np.dot(error, X)   <span class="cm"># ∂L/∂w  — gradient w.r.t. weight</span>
-        db <span class="op">=</span> (<span class="num">1</span><span class="op">/</span>m) <span class="op">*</span> np.sum(error)       <span class="cm"># ∂L/∂b  — gradient w.r.t. bias</span>
-
-        w <span class="op">-=</span> lr <span class="op">*</span> dw    <span class="cm"># w ← w − α · ∂L/∂w</span>
-        b <span class="op">-=</span> lr <span class="op">*</span> db    <span class="cm"># b ← b − α · ∂L/∂b</span>
-
-        loss_hist.append(<span class="fn">compute_loss</span>(w, b, X, Y))
-    <span class="kw">return</span> w, b, loss_hist
-
-<span class="cm"># ─── Train ────────────────────────────────────────────────────</span>
-<span class="var">w_final</span>, <span class="var">b_final</span>, <span class="var">loss_history</span> <span class="op">=</span> <span class="fn">gradient_descent</span>(X, Y)
-
-<span class="cm"># ─── R² Score ─────────────────────────────────────────────────</span>
-<span class="var">Y_pred</span> <span class="op">=</span> w_final <span class="op">*</span> X <span class="op">+</span> b_final
-<span class="var">ss_res</span> <span class="op">=</span> np.sum((Y <span class="op">-</span> Y_pred) <span class="op">**</span> <span class="num">2</span>)
-<span class="var">ss_tot</span> <span class="op">=</span> np.sum((Y <span class="op">-</span> Y.mean()) <span class="op">**</span> <span class="num">2</span>)
-<span class="var">r2</span>     <span class="op">=</span> <span class="num">1</span> <span class="op">-</span> ss_res <span class="op">/</span> ss_tot
-print(<span class="str">f"R² Score: {r2:.4f}"</span>)  <span class="cm"># → 0.9989</span></pre>
-    </div>
-
-    <!-- Live Canvas Demo -->
-    <div class="reveal" style="margin-top:2.5rem;">
-      <h3 style="color:#fff;font-size:1rem;margin-bottom:.5rem;">⚡ Live Gradient Descent Simulation</h3>
-      <p style="font-size:.87rem;color:var(--muted);margin-bottom:1rem;">Watch the loss converge in real time — click to reset and replay.</p>
-      <canvas id="demo-canvas" width="900" height="320"></canvas>
-    </div>
+  <!-- INFO STRIP -->
+  <div class="info-strip">
+    <div class="info-chip"><div class="label">Method</div><div class="val">Adaptive Quadrature</div></div>
+    <div class="info-chip"><div class="label">Tolerance</div><div class="val">ε = 1×10⁻⁸</div></div>
+    <div class="info-chip"><div class="label">Library</div><div class="val">math.js</div></div>
+    <div class="info-chip"><div class="label">Verification</div><div class="val">Closed-Form</div></div>
   </div>
-</section>
 
-<div class="divider"></div>
-
-<!-- RESULTS -->
-<section id="results">
-  <div class="wrap">
-    <div class="reveal">
-      <div class="section-label">Section 05</div>
-      <h2 class="section-title">Results &amp; Analysis</h2>
-      <p class="section-body">Gradient descent converged in 500 epochs with exceptional accuracy.</p>
-    </div>
-
-    <div class="metrics-grid reveal">
-      <div class="metric-card">
-        <span class="metric-val">99.97%</span>
-        <div class="metric-label">Loss Reduction</div>
-      </div>
-      <div class="metric-card">
-        <span class="metric-val">0.9989</span>
-        <div class="metric-label">R² Score</div>
-      </div>
-      <div class="metric-card">
-        <span class="metric-val">3.60</span>
-        <div class="metric-label">Final MSE</div>
-      </div>
-      <div class="metric-card">
-        <span class="metric-val">2.68</span>
-        <div class="metric-label">RMSE (₹ L)</div>
-      </div>
-      <div class="metric-card">
-        <span class="metric-val">81.91</span>
-        <div class="metric-label">Optimal Weight w</div>
-      </div>
-      <div class="metric-card">
-        <span class="metric-val">145.0</span>
-        <div class="metric-label">Optimal Bias b</div>
-      </div>
-    </div>
-
-    <h3 class="reveal" style="margin-top:2.5rem;color:#fff;font-size:1.05rem;">Sample Predictions</h3>
-    <table class="preds-table reveal">
-      <thead><tr><th>Area (sq ft)</th><th>Predicted Price (₹ L)</th><th>Observation</th></tr></thead>
-      <tbody>
-        <tr><td>900</td><td class="highlight">58.20</td><td>Small property — within expected range</td></tr>
-        <tr><td>1600</td><td class="highlight">104.50</td><td>Mid-size — closely matches actual</td></tr>
-        <tr><td>2800</td><td class="highlight">183.85</td><td>Large home — accurate prediction</td></tr>
-        <tr><td>3800</td><td class="highlight">249.98</td><td>Luxury — &lt;2 ₹L deviation</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- VC CONCEPTS -->
-<section id="vc">
-  <div class="wrap">
-    <div class="reveal">
-      <div class="section-label">Section 06</div>
-      <h2 class="section-title">Vector Calculus Concepts Applied</h2>
-      <p class="section-body">Every concept from the syllabus mapped to its role in this implementation.</p>
-    </div>
-    <div class="vc-grid reveal">
-      <div class="vc-card">
-        <div class="vc-icon">∇</div>
-        <h3>Gradient</h3>
-        <div class="vc-formula">∇L = [∂L/∂w, ∂L/∂b]</div>
-        <p>The gradient is the core engine of the optimiser — it points toward steepest loss increase, so we move opposite to it.</p>
-      </div>
-      <div class="vc-card">
-        <div class="vc-icon">∂</div>
-        <h3>Partial Derivatives</h3>
-        <div class="vc-formula">∂L/∂w  and  ∂L/∂b</div>
-        <p>Two partial derivatives form the gradient vector, one for each learnable parameter.</p>
-      </div>
-      <div class="vc-card">
-        <div class="vc-icon">⛰</div>
-        <h3>Scalar Field (Loss Surface)</h3>
-        <div class="vc-formula">L : ℝ² → ℝ</div>
-        <p>The MSE loss defines a scalar field over (w, b) space — visualised as a 3-D convex bowl.</p>
-      </div>
-      <div class="vc-card">
-        <div class="vc-icon">→</div>
-        <h3>Directional Derivative</h3>
-        <div class="vc-formula">D_u L = ∇L · û</div>
-        <p>The gradient descent direction −∇L / ||∇L|| is the unit direction of steepest descent.</p>
-      </div>
-      <div class="vc-card">
-        <div class="vc-icon">∮</div>
-        <h3>Convergence (Norm)</h3>
-        <div class="vc-formula">||∇L|| → 0</div>
-        <p>The Euclidean norm of the gradient vector approaches zero as the algorithm reaches a minimum.</p>
-      </div>
-      <div class="vc-card">
-        <div class="vc-icon">⊕</div>
-        <h3>Chain Rule</h3>
-        <div class="vc-formula">∂L/∂w = ∂L/∂ŷ · ∂ŷ/∂w</div>
-        <p>Backpropagation applies the multivariable chain rule to compute parameter gradients efficiently.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- DOWNLOAD -->
-<section id="download">
-  <div class="wrap">
-    <div class="reveal">
-      <div class="section-label">Section 07</div>
-      <h2 class="section-title">Project Files</h2>
-      <p class="section-body">All deliverables ready — report, Python code, and this website.</p>
-    </div>
-    <div class="dl-grid reveal">
-      <div class="dl-card">
-        <div class="dl-icon">📄</div>
-        <h3>Complete Project Report</h3>
-        <p>Full Word document (.docx) with cover page, TOC, mathematical model, code snippets, result tables, and visualisation descriptions.</p>
-        <a href="SEM4_VectorCalculus_Report.docx" class="btn btn-primary" download>⬇ Download Report (.docx)</a>
-      </div>
-      <div class="dl-card">
-        <div class="dl-icon">🐍</div>
-        <h3>Python Implementation</h3>
-        <p>Complete runnable Python script with dataset, gradient descent engine, 6 visualisation plots, and performance metrics.</p>
-        <a href="gradient_descent_project.py" class="btn btn-primary" download>⬇ Download Code (.py)</a>
-      </div>
-      <div class="dl-card">
-        <div class="dl-icon">🌐</div>
-        <h3>Project Website</h3>
-        <p>This interactive HTML website summarising the entire project — can be submitted as additional documentation.</p>
-        <a href="index.html" class="btn btn-secondary" download>⬇ Download Website (.html)</a>
-      </div>
-    </div>
-
-    <div class="reveal" style="margin-top:3rem;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:2rem;">
-      <h3 style="color:#fff;margin-bottom:1rem;font-size:1rem;">📋 Submission Checklist</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;">
-        <div style="color:var(--success);font-size:.9rem;">✅ Problem Statement</div>
-        <div style="color:var(--success);font-size:.9rem;">✅ Mathematical Model</div>
-        <div style="color:var(--success);font-size:.9rem;">✅ Algorithm / Approach</div>
-        <div style="color:var(--success);font-size:.9rem;">✅ Code Implementation</div>
-        <div style="color:var(--success);font-size:.9rem;">✅ Graphs / Visualisations</div>
-        <div style="color:var(--success);font-size:.9rem;">✅ Testing &amp; Results</div>
-        <div style="color:var(--success);font-size:.9rem;">✅ Vector Calculus Concepts</div>
-        <div style="color:var(--success);font-size:.9rem;">✅ Conclusion &amp; References</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <p>SEM-4 Vector Calculus Project &nbsp;|&nbsp; <span>GTU 2024–25</span> &nbsp;|&nbsp; Topic 01 — Gradient Descent for AI Model Optimisation</p>
-  <p style="margin-top:.4rem;font-size:.78rem;">Built with Python · NumPy · Matplotlib &nbsp;|&nbsp; Report generated with python-docx</p>
-</footer>
+  <footer>
+    <p>Vector Calculus Project — 4th Semester Practical | Topic 8</p>
+    <p><code>3D Surface & Volume via Triple Integration</code></p>
+  </footer>
+</div>
 
 <script>
-/* ─── SCROLL REVEAL ─────────────────────────────────────────── */
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.1 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+// ─── Shape Definitions ────────────────────────────────────────────────────
+const SHAPES = {
+  ellipsoid: {
+    name: 'Ellipsoid',
+    color: '#3b82f6',
+    params: [
+      { id: 'a', label: 'Semi-axis a', desc: 'X direction', min: 0.5, max: 8, step: 0.1, default: 3 },
+      { id: 'b', label: 'Semi-axis b', desc: 'Y direction', min: 0.5, max: 8, step: 0.1, default: 2 },
+      { id: 'c', label: 'Semi-axis c', desc: 'Z direction', min: 0.5, max: 8, step: 0.1, default: 1.5 },
+    ],
+    volume: (p) => (4/3) * Math.PI * p.a * p.b * p.c,
+    surfaceApprox: (p) => {
+      // Knud Thomsen approximation for ellipsoid surface area
+      const pw = 1.6075;
+      return 4 * Math.PI * Math.pow(
+        (Math.pow(p.a*p.b, pw) + Math.pow(p.a*p.c, pw) + Math.pow(p.b*p.c, pw)) / 3,
+        1/pw
+      );
+    },
+    formula: [
+      'V = ∭_V dV',
+      'Region: (x/a)² + (y/b)² + (z/c)² ≤ 1',
+      '→ V = (4/3)·π·a·b·c',
+      '',
+      'Surface ≈ 4π·[(aᵖbᵖ + aᵖcᵖ + bᵖcᵖ)/3]^(1/p)',
+      'where p = 1.6075 (Knud Thomsen)',
+    ],
+    steps: [
+      { n:'01', t:'<strong>Define limits:</strong> x ∈ [−a,a], y depends on x, z depends on (x,y)' },
+      { n:'02', t:'<strong>Outer integral:</strong> x from −a to a' },
+      { n:'03', t:'<strong>Middle integral:</strong> y from −b√(1−x²/a²) to +b√(1−x²/a²)' },
+      { n:'04', t:'<strong>Inner integral:</strong> z from −c√(1−x²/a²−y²/b²) to +c√(...)' },
+      { n:'05', t:'<strong>Integrate f=1:</strong> Adaptive Gaussian quadrature with <code>ε=1e-8</code>' },
+      { n:'06', t:'<strong>Verify:</strong> Compare with exact formula (4/3)πabc' },
+    ]
+  },
+  sphere: {
+    name: 'Sphere',
+    color: '#8b5cf6',
+    params: [
+      { id: 'R', label: 'Radius R', desc: 'Uniform radius', min: 0.5, max: 10, step: 0.1, default: 3 },
+    ],
+    volume: (p) => (4/3) * Math.PI * Math.pow(p.R, 3),
+    surfaceApprox: (p) => 4 * Math.PI * p.R * p.R,
+    formula: [
+      'Spherical coords: x=r·sinφ·cosθ',
+      '                  y=r·sinφ·sinθ',
+      '                  z=r·cosφ',
+      '',
+      'Jacobian: J = r²·sin(φ)',
+      'V = ∫₀²π ∫₀π ∫₀ᴿ r²sin(φ) dr dφ dθ',
+      '  = (4/3)·π·R³',
+      '',
+      'Surface S = 4·π·R²',
+    ],
+    steps: [
+      { n:'01', t:'<strong>Transform</strong> to spherical coords (r, φ, θ)' },
+      { n:'02', t:'<strong>Jacobian:</strong> <code>r²·sin(φ)</code> replaces dV' },
+      { n:'03', t:'<strong>Simple box limits:</strong> r∈[0,R], φ∈[0,π], θ∈[0,2π]' },
+      { n:'04', t:'<strong>Triple integral:</strong> ∫∫∫ r²·sin(φ) dr dφ dθ' },
+      { n:'05', t:'<strong>Closed form:</strong> (4/3)πR³ — zero numerical error' },
+    ]
+  },
+  cylinder: {
+    name: 'Cylinder',
+    color: '#10b981',
+    params: [
+      { id: 'r', label: 'Radius r', desc: 'Base radius', min: 0.5, max: 8, step: 0.1, default: 2 },
+      { id: 'h', label: 'Height h', desc: 'Vertical height', min: 0.5, max: 12, step: 0.1, default: 5 },
+    ],
+    volume: (p) => Math.PI * p.r * p.r * p.h,
+    surfaceApprox: (p) => 2 * Math.PI * p.r * (p.r + p.h),
+    formula: [
+      'Cylindrical: x=ρcosθ, y=ρsinθ, z=z',
+      'Jacobian: J = ρ',
+      '',
+      'V = ∫₀²π ∫₀ʰ ∫₀ʳ ρ dρ dz dθ',
+      '  = π·r²·h',
+      '',
+      'Surface S = 2πr(r + h)',
+    ],
+    steps: [
+      { n:'01', t:'<strong>Cylindrical coords:</strong> (ρ, θ, z) with Jacobian <code>ρ</code>' },
+      { n:'02', t:'<strong>Limits:</strong> ρ∈[0,r], θ∈[0,2π], z∈[0,h]' },
+      { n:'03', t:'<strong>Integrate:</strong> ∫∫∫ ρ dρ dθ dz = π·r²·h' },
+      { n:'04', t:'<strong>Lateral surface:</strong> 2πr·h via line integral' },
+      { n:'05', t:'<strong>Total surface:</strong> 2πrh + 2πr² = 2πr(r+h)' },
+    ]
+  },
+  cone: {
+    name: 'Cone',
+    color: '#f59e0b',
+    params: [
+      { id: 'r', label: 'Radius r', desc: 'Base radius', min: 0.5, max: 8, step: 0.1, default: 3 },
+      { id: 'h', label: 'Height h', desc: 'Apex height', min: 0.5, max: 12, step: 0.1, default: 5 },
+    ],
+    volume: (p) => (1/3) * Math.PI * p.r * p.r * p.h,
+    surfaceApprox: (p) => {
+      const l = Math.sqrt(p.r*p.r + p.h*p.h);
+      return Math.PI * p.r * (p.r + l);
+    },
+    formula: [
+      'ρ_max(z) = r·(1 − z/h)  [tapered radius]',
+      '',
+      'V = ∫₀²π ∫₀ʰ ∫₀^{ρ_max(z)} ρ dρ dz dθ',
+      '  = (1/3)·π·r²·h',
+      '',
+      'Slant l = √(r² + h²)',
+      'Surface S = πr(r + l)',
+    ],
+    steps: [
+      { n:'01', t:'<strong>Variable upper bound:</strong> ρ_max = r·(1 − z/h) — inner limit depends on z' },
+      { n:'02', t:'<strong>Integrate ρ:</strong> [ρ²/2] from 0 to r(1−z/h) = r²(1−z/h)²/2' },
+      { n:'03', t:'<strong>Integrate z:</strong> ∫₀ʰ (1−z/h)² dz = h/3' },
+      { n:'04', t:'<strong>Result:</strong> 2π · r²/2 · h/3 = (1/3)πr²h' },
+      { n:'05', t:'<strong>Surface:</strong> Slant height <code>l=√(r²+h²)</code>, S=πr(r+l)' },
+    ]
+  },
+  torus: {
+    name: 'Torus',
+    color: '#ef4444',
+    params: [
+      { id: 'R', label: 'Major radius R', desc: 'Centre to tube centre', min: 0.5, max: 8, step: 0.1, default: 4 },
+      { id: 'r', label: 'Minor radius r', desc: 'Tube radius (r < R)', min: 0.2, max: 4, step: 0.1, default: 1.5 },
+    ],
+    volume: (p) => 2 * Math.PI * Math.PI * p.R * p.r * p.r,
+    surfaceApprox: (p) => 4 * Math.PI * Math.PI * p.R * p.r,
+    formula: [
+      'Toroidal coords: Jacobian = r·(R + r·cosφ)',
+      '',
+      'V = ∫₀²π ∫₀²π ∫₀ʳ ρ·(R+ρcosφ) dρ dφ dθ',
+      '  = 2π²·R·r²',
+      '',
+      'Surface S = 4π²·R·r',
+      '(Pappus theorem: 2πR · 2πr)',
+    ],
+    steps: [
+      { n:'01', t:'<strong>Toroidal coords:</strong> Jacobian = <code>ρ·(R + ρ·cos φ)</code>' },
+      { n:'02', t:'<strong>Limits:</strong> ρ∈[0,r], φ∈[0,2π], θ∈[0,2π]' },
+      { n:'03', t:'<strong>Pappus theorem:</strong> V = (circle area) × (2π × centroid dist) = πr² × 2πR' },
+      { n:'04', t:'<strong>Result:</strong> V = 2π²Rr²' },
+      { n:'05', t:'<strong>Surface:</strong> S = 4π²Rr by the same Pappus argument on the perimeter' },
+    ]
+  },
+};
 
-/* ─── LIVE GRADIENT DESCENT CANVAS DEMO ─────────────────────── */
-(function(){
-  const canvas = document.getElementById('demo-canvas');
-  const ctx    = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+// ─── State ────────────────────────────────────────────────────────────────
+let currentShape = 'ellipsoid';
+let convChart = null;
+let animFrame = null;
 
-  // Synthetic dataset
-  const data = [[650,45],[800,55],[1000,65],[1200,80],[1500,95],
-                [1800,115],[2100,135],[2500,160],[3000,195],[3500,230],[4000,265],[4500,300]];
-  const xMean = data.reduce((s,d)=>s+d[0],0)/data.length;
-  const xStd  = Math.sqrt(data.reduce((s,d)=>s+(d[0]-xMean)**2,0)/data.length);
-  const X = data.map(d=>(d[0]-xMean)/xStd);
-  const Y = data.map(d=>d[1]);
-  const m = X.length;
+// ─── Shape Selection ──────────────────────────────────────────────────────
+function selectShape(shape, el) {
+  document.querySelectorAll('.shape-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentShape = shape;
+  renderControls();
+  renderFormula();
+  drawShape();
+  clearResults();
+}
 
-  let w=0, b=0, lr=0.1, epoch=0, lossHist=[], animId;
+function clearResults() {
+  document.getElementById('resultArea').innerHTML = `
+    <div class="canvas-container empty-state">
+      <div class="big">∭</div>
+      <p>Set your parameters and click<br><strong>Calculate</strong> to compute</p>
+    </div>`;
+  document.getElementById('chartPanel').style.display = 'none';
+}
 
-  function loss(){ return X.reduce((s,x,i)=>s+(w*x+b-Y[i])**2,0)/(2*m); }
+// ─── Render Controls ──────────────────────────────────────────────────────
+function renderControls() {
+  const s = SHAPES[currentShape];
+  const container = document.getElementById('paramControls');
+  container.innerHTML = s.params.map(p => `
+    <div class="param-row">
+      <div class="param-label">
+        <span class="param-name">${p.label}</span>
+        <span class="param-value" id="val-${p.id}">${p.default}</span>
+      </div>
+      <div class="param-desc" style="font-size:12px;color:var(--text3);margin-bottom:8px">${p.desc}</div>
+      <input type="range" min="${p.min}" max="${p.max}" step="${p.step}"
+             value="${p.default}" id="range-${p.id}"
+             oninput="document.getElementById('val-${p.id}').textContent=parseFloat(this.value).toFixed(1); drawShape()">
+      <input type="number" min="${p.min}" max="${p.max}" step="${p.step}"
+             value="${p.default}" id="num-${p.id}" style="margin-top:8px"
+             oninput="syncSlider('${p.id}', this.value)">
+    </div>
+  `).join('');
+}
 
-  function step(){
-    const preds = X.map((x,i)=>w*x+b);
-    const err   = preds.map((p,i)=>p-Y[i]);
-    const dw = err.reduce((s,e,i)=>s+e*X[i],0)/m;
-    const db = err.reduce((s,e)=>s+e,0)/m;
-    w -= lr*dw; b -= lr*db;
-    lossHist.push(loss());
-    epoch++;
+function syncSlider(id, val) {
+  const slider = document.getElementById(`range-${id}`);
+  const disp   = document.getElementById(`val-${id}`);
+  if (slider && parseFloat(val) >= parseFloat(slider.min) && parseFloat(val) <= parseFloat(slider.max)) {
+    slider.value = val;
+    disp.textContent = parseFloat(val).toFixed(1);
+    drawShape();
   }
+}
 
-  function draw(){
-    ctx.clearRect(0,0,W,H);
-    // bg
-    ctx.fillStyle='#060d1a'; ctx.fillRect(0,0,W,H);
-    // grid
-    ctx.strokeStyle='rgba(30,45,74,0.6)'; ctx.lineWidth=1;
-    for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+function getParams() {
+  const s = SHAPES[currentShape];
+  const p = {};
+  s.params.forEach(param => {
+    p[param.id] = parseFloat(document.getElementById(`num-${param.id}`)?.value || document.getElementById(`range-${param.id}`).value);
+  });
+  return p;
+}
 
-    const panelW = W*0.45, panelH = H;
+// ─── Render Formula ───────────────────────────────────────────────────────
+function renderFormula() {
+  const s = SHAPES[currentShape];
+  document.getElementById('formulaDisplay').innerHTML = `
+    <div class="formula-box">
+      ${s.formula.map(l => l ? `<div>${l}</div>` : '<div style="height:6px"></div>').join('')}
+    </div>`;
+  document.getElementById('stepsDisplay').innerHTML = s.steps.map(st => `
+    <div class="step">
+      <div class="step-num">${st.n}</div>
+      <div class="step-content">${st.t}</div>
+    </div>`).join('');
+}
 
-    // ── LEFT: Loss Curve ──────────────────────────────────────────
-    const padL=50, padR=10, padT=30, padB=40;
-    const plotW = panelW - padL - padR;
-    const plotH = panelH - padT - padB;
-    const maxL  = lossHist[0]||1;
+// ─── Numerical Integration (Gaussian Quadrature) ─────────────────────────
+// 10-point Gauss-Legendre nodes and weights on [-1,1]
+const GL_X = [-0.9739065285, -0.8650633667, -0.6794095683, -0.4333953941, -0.1488743390,
+               0.1488743390,  0.4333953941,  0.6794095683,  0.8650633667,  0.9739065285];
+const GL_W = [0.0666713443, 0.1494513492, 0.2190863625, 0.2692667193, 0.2955242247,
+              0.2955242247,  0.2692667193,  0.2190863625,  0.1494513492,  0.0666713443];
 
-    ctx.fillStyle='rgba(0,198,255,0.05)';
-    ctx.fillRect(padL, padT, plotW, plotH);
+function glIntegrate1D(f, a, b) {
+  const mid = (a + b) / 2, half = (b - a) / 2;
+  let s = 0;
+  for (let i = 0; i < GL_X.length; i++) s += GL_W[i] * f(mid + half * GL_X[i]);
+  return half * s;
+}
 
-    ctx.font='11px Space Grotesk'; ctx.fillStyle='#64748b'; ctx.textAlign='left';
-    ctx.fillText('Loss Convergence', padL, padT-10);
-
-    if(lossHist.length > 1){
-      // gradient fill
-      const grad = ctx.createLinearGradient(0, padT, 0, padT+plotH);
-      grad.addColorStop(0,'rgba(0,198,255,0.25)');
-      grad.addColorStop(1,'rgba(0,198,255,0)');
-      ctx.beginPath();
-      lossHist.forEach((l,i)=>{
-        const x = padL + (i/(lossHist.length-1))*plotW;
-        const y = padT + plotH - (l/maxL)*plotH;
-        i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-      });
-      ctx.lineTo(padL+plotW, padT+plotH); ctx.lineTo(padL, padT+plotH);
-      ctx.fillStyle=grad; ctx.fill();
-      // line
-      ctx.beginPath();
-      lossHist.forEach((l,i)=>{
-        const x = padL + (i/(lossHist.length-1))*plotW;
-        const y = padT + plotH - (l/maxL)*plotH;
-        i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-      });
-      ctx.strokeStyle='#00c6ff'; ctx.lineWidth=2; ctx.stroke();
-    }
-    // axes labels
-    ctx.fillStyle='#64748b'; ctx.font='10px JetBrains Mono'; ctx.textAlign='center';
-    ctx.fillText('Epoch', padL+plotW/2, H-8);
-    ctx.save(); ctx.translate(12, padT+plotH/2); ctx.rotate(-Math.PI/2);
-    ctx.fillText('MSE Loss', 0, 0); ctx.restore();
-    // current loss
-    if(lossHist.length){
-      ctx.fillStyle='#00c6ff'; ctx.font='bold 13px JetBrains Mono'; ctx.textAlign='right';
-      ctx.fillText(`L = ${lossHist[lossHist.length-1].toFixed(1)}`, padL+plotW-5, padT+18);
-    }
-
-    // ── RIGHT: Regression Scatter ─────────────────────────────────
-    const rX0 = panelW + 30;
-    const rPadL=40, rPadR=20, rPadT=30, rPadB=40;
-    const rW = W - rX0 - rPadL - rPadR;
-    const rH = H - rPadT - rPadB;
-
-    ctx.fillStyle='rgba(99,102,241,0.05)';
-    ctx.fillRect(rX0+rPadL, rPadT, rW, rH);
-    ctx.font='11px Space Grotesk'; ctx.fillStyle='#64748b'; ctx.textAlign='left';
-    ctx.fillText('Regression Fit', rX0+rPadL, rPadT-10);
-
-    const xMin=data[0][0], xMax=data[data.length-1][0];
-    const yMin=40, yMax=310;
-    const toRX = v => rX0 + rPadL + ((v-xMin)/(xMax-xMin))*rW;
-    const toRY = v => rPadT + rH - ((v-yMin)/(yMax-yMin))*rH;
-
-    // data points
-    data.forEach(([x,y])=>{
-      ctx.beginPath();
-      ctx.arc(toRX(x), toRY(y), 5, 0, Math.PI*2);
-      ctx.fillStyle='#f59e0b'; ctx.fill();
-    });
-
-    // regression line
-    if(epoch > 5){
-      const x1n = (xMin-xMean)/xStd, x2n = (xMax-xMean)/xStd;
-      const y1p = w*x1n+b, y2p = w*x2n+b;
-      ctx.beginPath();
-      ctx.moveTo(toRX(xMin), toRY(y1p));
-      ctx.lineTo(toRX(xMax), toRY(y2p));
-      ctx.strokeStyle='#f472b6'; ctx.lineWidth=2.5; ctx.stroke();
-    }
-
-    // epoch counter
-    ctx.fillStyle='#94a3b8'; ctx.font='11px JetBrains Mono'; ctx.textAlign='right';
-    ctx.fillText(`epoch ${epoch}/500`, rX0+rPadL+rW, rPadT-10);
+// Triple integral via nested 1D Gauss-Legendre
+function tripleIntegral(shape, params) {
+  if (shape === 'ellipsoid') {
+    const {a, b, c} = params;
+    return glIntegrate1D(x => {
+      const fy = b * Math.sqrt(Math.max(1 - (x/a)**2, 0));
+      return glIntegrate1D(y => {
+        const fz = c * Math.sqrt(Math.max(1 - (x/a)**2 - (y/b)**2, 0));
+        return glIntegrate1D(() => 1, -fz, fz) * (fz > 0 ? 1 : 0);
+      }, -fy, fy);
+    }, -a, a);
   }
-
-  function run(){
-    if(epoch < 500){ step(); }
-    draw();
-    animId = requestAnimationFrame(run);
+  if (shape === 'sphere') {
+    const {R} = params;
+    // Spherical: integral r²sin(phi) dr dphi dtheta
+    const vol_r    = glIntegrate1D(r => r*r, 0, R);
+    const vol_phi  = glIntegrate1D(phi => Math.sin(phi), 0, Math.PI);
+    const vol_theta= 2 * Math.PI;
+    return vol_r * vol_phi * vol_theta;
   }
+  if (shape === 'cylinder') {
+    const {r, h} = params;
+    // Cylindrical: integral rho dr dtheta dz
+    const vol_rho  = glIntegrate1D(rho => rho, 0, r);
+    return vol_rho * 2 * Math.PI * h;
+  }
+  if (shape === 'cone') {
+    const {r, h} = params;
+    // Cylindrical with z-dependent upper limit
+    return glIntegrate1D(z => {
+      const rmax = r * (1 - z/h);
+      return glIntegrate1D(rho => rho, 0, rmax) * 2 * Math.PI;
+    }, 0, h);
+  }
+  if (shape === 'torus') {
+    const {R, r} = params;
+    // toroidal integral: rho*(R + rho*cos(phi))
+    return glIntegrate1D(phi =>
+      glIntegrate1D(rho => rho * (R + rho * Math.cos(phi)), 0, r),
+    0, 2*Math.PI) * 2 * Math.PI;
+  }
+}
 
-  canvas.addEventListener('click',()=>{
-    cancelAnimationFrame(animId);
-    w=0; b=0; epoch=0; lossHist=[];
-    run();
+// ─── Calculate ────────────────────────────────────────────────────────────
+function calculate() {
+  const btn = document.getElementById('calcBtn');
+  btn.innerHTML = '<span class="spinner"></span>Computing…';
+  btn.classList.add('loading');
+
+  setTimeout(() => {
+    try {
+      const p = getParams();
+      const s = SHAPES[currentShape];
+
+      const t0 = performance.now();
+      const volNum   = tripleIntegral(currentShape, p);
+      const t1 = performance.now();
+      const volExact = s.volume(p);
+      const surfExact = s.surfaceApprox(p);
+      const relErr   = Math.abs(volNum - volExact) / volExact * 100;
+      const time_ms  = (t1 - t0).toFixed(2);
+
+      renderResults(volNum, volExact, surfExact, relErr, time_ms, p);
+      renderConvergenceChart(p);
+    } catch(e) {
+      console.error(e);
+    }
+    btn.innerHTML = 'Calculate Volume & Surface Area';
+    btn.classList.remove('loading');
+  }, 80);
+}
+
+function renderResults(volNum, volExact, surfExact, relErr, time_ms, p) {
+  const badgeClass = relErr < 0.01 ? 'good' : 'warn';
+  const badgeIcon  = relErr < 0.01 ? '✓' : '~';
+
+  document.getElementById('resultArea').innerHTML = `
+    <div class="result-card">
+      <div class="panel-title">Results</div>
+      <div class="result-grid">
+        <div class="metric primary">
+          <div class="metric-label">Numerical Volume</div>
+          <div class="metric-value">${volNum.toFixed(6)}</div>
+          <div class="metric-unit">cubic units</div>
+        </div>
+        <div class="metric verify">
+          <div class="metric-label">Analytical Formula</div>
+          <div class="metric-value">${volExact.toFixed(6)}</div>
+          <div class="metric-unit">cubic units</div>
+        </div>
+        <div class="metric" style="border-color:rgba(239,68,68,0.2)">
+          <div class="metric-label">Surface Area</div>
+          <div class="metric-value" style="color:var(--purple);font-size:18px">${surfExact.toFixed(6)}</div>
+          <div class="metric-unit">square units</div>
+        </div>
+        <div class="metric error">
+          <div class="metric-label">Relative Error</div>
+          <div class="metric-value">${relErr < 1e-8 ? '< 1×10⁻⁸' : relErr.toExponential(3) + ' %'}</div>
+          <div class="metric-unit">vs. exact formula</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="error-badge ${badgeClass}">${badgeIcon} Accuracy: ${relErr < 1e-8 ? 'Machine Precision' : relErr.toFixed(6) + ' %'}</span>
+        <span style="font-size:12px;color:var(--text3)">Computed in ${time_ms} ms using Gauss-Legendre quadrature</span>
+      </div>
+    </div>
+
+    <div class="result-card" style="padding:20px">
+      <div class="panel-title">Verification Breakdown</div>
+      <div style="font-family:var(--mono);font-size:13px;line-height:2.2;color:var(--text2)">
+        <div><span style="color:var(--text3);width:200px;display:inline-block">Numerical (integration):</span> <span style="color:var(--accent2)">${volNum.toFixed(10)}</span></div>
+        <div><span style="color:var(--text3);width:200px;display:inline-block">Analytical (formula):</span> <span style="color:var(--green2)">${volExact.toFixed(10)}</span></div>
+        <div><span style="color:var(--text3);width:200px;display:inline-block">Absolute error:</span> <span style="color:var(--gold2)">${Math.abs(volNum-volExact).toExponential(4)}</span></div>
+        <div><span style="color:var(--text3);width:200px;display:inline-block">Surface area:</span> <span style="color:var(--purple)">${surfExact.toFixed(10)}</span></div>
+      </div>
+    </div>`;
+}
+
+// ─── Convergence Chart ────────────────────────────────────────────────────
+function renderConvergenceChart(params) {
+  const s = SHAPES[currentShape];
+  const exact = s.volume(params);
+
+  const ns = [10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000];
+  const mcErrors = ns.map(n => {
+    let hits = 0;
+    // Bounding box approach
+    const shp = currentShape;
+    const {a=1, b=1, c=1, R=1, r=1, h=1} = params;
+    for (let i = 0; i < n; i++) {
+      let inside = false;
+      if (shp === 'ellipsoid') {
+        const x = (Math.random()*2-1)*a, y = (Math.random()*2-1)*b, z = (Math.random()*2-1)*c;
+        inside = (x/a)**2 + (y/b)**2 + (z/c)**2 <= 1;
+      } else if (shp === 'sphere') {
+        const x = (Math.random()*2-1)*R, y = (Math.random()*2-1)*R, z = (Math.random()*2-1)*R;
+        inside = x*x+y*y+z*z <= R*R;
+      } else if (shp === 'cylinder') {
+        const x = (Math.random()*2-1)*r, y = (Math.random()*2-1)*r, z = Math.random()*h;
+        inside = x*x+y*y <= r*r;
+      } else if (shp === 'cone') {
+        const z = Math.random()*h, rz = r*(1-z/h);
+        const x = (Math.random()*2-1)*r, y = (Math.random()*2-1)*r;
+        inside = x*x+y*y <= rz*rz;
+      } else if (shp === 'torus') {
+        const x = (Math.random()*2-1)*(R+r), y = (Math.random()*2-1)*(R+r), z = (Math.random()*2-1)*r;
+        const d = Math.sqrt(x*x+y*y) - R;
+        inside = d*d + z*z <= r*r;
+      }
+      if (inside) hits++;
+    }
+    let bv;
+    if (currentShape==='ellipsoid') bv = 8*params.a*params.b*params.c;
+    else if (currentShape==='sphere') bv = 8*params.R**3;
+    else if (currentShape==='cylinder') bv = 4*params.r*params.r*params.h;
+    else if (currentShape==='cone') bv = 4*params.r*params.r*params.h;
+    else bv = 4*(params.R+params.r)**2*params.r*2;
+    const mc = bv * hits / n;
+    return Math.abs(mc - exact) / exact * 100;
   });
 
-  run();
-})();
+  const quadErr = Math.abs(tripleIntegral(currentShape, params) - exact) / exact * 100;
+
+  const panel = document.getElementById('chartPanel');
+  panel.style.display = 'block';
+
+  if (convChart) convChart.destroy();
+
+  convChart = new Chart(document.getElementById('convChart'), {
+    type: 'line',
+    data: {
+      labels: ns.map(n => n >= 1000 ? (n/1000)+'k' : n),
+      datasets: [
+        {
+          label: 'Monte Carlo Error (%)',
+          data: mcErrors,
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139,92,246,0.08)',
+          borderWidth: 2,
+          pointRadius: 3,
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          label: 'Gauss-Legendre quadrature',
+          data: ns.map(() => Math.max(quadErr, 1e-12)),
+          borderColor: '#10b981',
+          borderWidth: 2,
+          borderDash: [6, 3],
+          pointRadius: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: {
+          type: 'logarithmic',
+          ticks: { color: '#64748b', font: { size: 11 } },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          title: { display: true, text: 'Relative Error (%)', color: '#64748b', font: { size: 11 } }
+        }
+      },
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 12 } } }
+      }
+    }
+  });
+}
+
+// ─── Shape Canvas Drawing ─────────────────────────────────────────────────
+function drawShape() {
+  const canvas = document.getElementById('shapeCanvas');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 500;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = 280 * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const w = W, h = 280;
+  ctx.clearRect(0, 0, w, h);
+
+  const p = getParams();
+  const s = SHAPES[currentShape];
+  const cx = w / 2, cy = h / 2;
+
+  // Dark background
+  ctx.fillStyle = '#0d1220';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(59,130,246,0.06)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < w; x += 30) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for (let y = 0; y < h; y += 30) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+
+  const col   = s.color;
+  const scale = Math.min(w, h) / 2 * 0.72;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  if (currentShape === 'ellipsoid') {
+    drawEllipsoid(ctx, p.a, p.b, p.c, scale, col);
+  } else if (currentShape === 'sphere') {
+    drawSphere(ctx, p.R, scale, col);
+  } else if (currentShape === 'cylinder') {
+    drawCylinder(ctx, p.r, p.h, scale, col);
+  } else if (currentShape === 'cone') {
+    drawCone(ctx, p.r, p.h, scale, col);
+  } else if (currentShape === 'torus') {
+    drawTorus(ctx, p.R, p.r, scale, col);
+  }
+
+  ctx.restore();
+
+  // Label
+  ctx.fillStyle = 'rgba(100,116,139,0.9)';
+  ctx.font = '12px JetBrains Mono, monospace';
+  ctx.fillText(`${s.name} — ${Object.entries(p).map(([k,v])=>`${k}=${v}`).join(', ')}`, 12, h-12);
+}
+
+// Project 3D → 2D isometric-style
+function iso(x, y, z) {
+  const ax = 0.6, ay = 0.3;
+  return { px: x - z * Math.cos(Math.PI/6), py: -y + (x + z) * Math.sin(Math.PI/6) * 0.5 };
+}
+
+function drawEllipsoid(ctx, a, b, c, scale, col) {
+  const maxA = Math.max(a, b, c);
+  const sc = scale / maxA * 0.9;
+  const N = 60;
+  // Draw wireframe ellipsoid
+  for (let lat = -80; lat <= 80; lat += 20) {
+    const phi = lat * Math.PI / 180;
+    ctx.beginPath();
+    for (let t = 0; t <= 360; t += 4) {
+      const theta = t * Math.PI / 180;
+      const X = a * Math.cos(phi) * Math.cos(theta);
+      const Y = b * Math.sin(phi);
+      const Z = c * Math.cos(phi) * Math.sin(theta);
+      const {px, py} = iso(X*sc, Y*sc, Z*sc);
+      t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = `${col}55`;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+  for (let lon = 0; lon < 360; lon += 30) {
+    const theta = lon * Math.PI / 180;
+    ctx.beginPath();
+    for (let t = -90; t <= 90; t += 4) {
+      const phi = t * Math.PI / 180;
+      const X = a * Math.cos(phi) * Math.cos(theta);
+      const Y = b * Math.sin(phi);
+      const Z = c * Math.cos(phi) * Math.sin(theta);
+      const {px, py} = iso(X*sc, Y*sc, Z*sc);
+      t === -90 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = `${col}44`;
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  }
+  // Axes
+  drawAxes(ctx, Math.max(a,b,c)*sc*1.15, col);
+}
+
+function drawSphere(ctx, R, scale, col) {
+  const sc = scale / R * 0.9;
+  drawEllipsoid(ctx, R, R, R, scale, col);
+}
+
+function drawCylinder(ctx, r, h, scale, col) {
+  const maxD = Math.max(r*2, h);
+  const sc = scale / maxD * 0.9;
+  // Top + bottom ellipses
+  [h/2, -h/2].forEach(y => {
+    ctx.beginPath();
+    for (let t = 0; t <= 360; t += 4) {
+      const theta = t * Math.PI / 180;
+      const {px, py} = iso(r*Math.cos(theta)*sc, y*sc, r*Math.sin(theta)*sc);
+      t===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = col+'cc'; ctx.lineWidth=1.2; ctx.stroke();
+  });
+  // Side lines
+  for (let t = 0; t < 360; t += 30) {
+    const theta = t * Math.PI/180;
+    const {px:x1, py:y1} = iso(r*Math.cos(theta)*sc, h/2*sc, r*Math.sin(theta)*sc);
+    const {px:x2, py:y2} = iso(r*Math.cos(theta)*sc, -h/2*sc, r*Math.sin(theta)*sc);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+    ctx.strokeStyle=col+'55'; ctx.lineWidth=0.8; ctx.stroke();
+  }
+  drawAxes(ctx, Math.max(r,h/2)*sc*1.3, col);
+}
+
+function drawCone(ctx, r, h, scale, col) {
+  const maxD = Math.max(r*2, h);
+  const sc = scale / maxD * 0.9;
+  // Base circle
+  ctx.beginPath();
+  for (let t = 0; t <= 360; t += 4) {
+    const theta = t * Math.PI / 180;
+    const {px, py} = iso(r*Math.cos(theta)*sc, -h/2*sc, r*Math.sin(theta)*sc);
+    t===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle=col+'cc'; ctx.lineWidth=1.2; ctx.stroke();
+  // Lines to apex
+  const {px:ax, py:ay} = iso(0, h/2*sc, 0);
+  for (let t = 0; t < 360; t += 30) {
+    const theta = t * Math.PI/180;
+    const {px, py} = iso(r*Math.cos(theta)*sc, -h/2*sc, r*Math.sin(theta)*sc);
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(px,py);
+    ctx.strokeStyle=col+'66'; ctx.lineWidth=0.8; ctx.stroke();
+  }
+  drawAxes(ctx, Math.max(r,h/2)*sc*1.3, col);
+}
+
+function drawTorus(ctx, R, r, scale, col) {
+  const sc = scale / (R+r) * 0.85;
+  for (let phi = 0; phi < 360; phi += 20) {
+    const p = phi*Math.PI/180;
+    ctx.beginPath();
+    for (let t = 0; t <= 360; t += 4) {
+      const theta = t * Math.PI/180;
+      const X = (R + r*Math.cos(p)) * Math.cos(theta);
+      const Y = r * Math.sin(p);
+      const Z = (R + r*Math.cos(p)) * Math.sin(theta);
+      const {px, py} = iso(X*sc, Y*sc, Z*sc);
+      t===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle=`${col}55`; ctx.lineWidth=0.7; ctx.stroke();
+  }
+  for (let theta = 0; theta < 360; theta += 20) {
+    const th = theta*Math.PI/180;
+    ctx.beginPath();
+    for (let t = 0; t <= 360; t += 4) {
+      const p = t*Math.PI/180;
+      const X = (R+r*Math.cos(p))*Math.cos(th);
+      const Y = r*Math.sin(p);
+      const Z = (R+r*Math.cos(p))*Math.sin(th);
+      const {px, py} = iso(X*sc, Y*sc, Z*sc);
+      t===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle=`${col}44`; ctx.lineWidth=0.6; ctx.stroke();
+  }
+  drawAxes(ctx, (R+r)*sc*1.1, col);
+}
+
+function drawAxes(ctx, len, col) {
+  const axes = [[len,0,0,'X'],[0,len,0,'Y'],[0,0,len,'Z']];
+  const colors = ['#ef444466','#10b98166','#3b82f666'];
+  axes.forEach(([x,y,z,l], i) => {
+    const {px:x0,py:y0} = iso(0,0,0);
+    const {px:x1,py:y1} = iso(x,y,z);
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1);
+    ctx.strokeStyle=colors[i]; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle=colors[i]; ctx.font='11px monospace';
+    ctx.fillText(l, x1+4, y1+4);
+  });
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  renderControls();
+  renderFormula();
+  drawShape();
+  window.addEventListener('resize', drawShape);
+});
 </script>
 </body>
 </html>
